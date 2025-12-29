@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, field_validator
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 
 
@@ -37,4 +37,66 @@ class EventResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# Response schemas for fetching errors
+class ProjectInfo(BaseModel):
+    id: int
+    project_key: str
+    name: str
+
+    class Config:
+        from_attributes = True
+
+
+class ErrorEventDetail(BaseModel):
+    id: int
+    timestamp: datetime
+    status_code: Optional[int]
+    payload: Dict[str, Any]
+    created_at: datetime
+    project: ProjectInfo
+
+    class Config:
+        from_attributes = True
+
+
+class ErrorEventListItem(BaseModel):
+    id: int
+    timestamp: datetime
+    status_code: Optional[int]
+    message: str
+    method: str
+    path: str
+    project_key: str
+    project_name: str
+    created_at: datetime
+    has_analysis: bool = False
+
+    class Config:
+        from_attributes = True
+
+
+class ErrorEventListResponse(BaseModel):
+    events: List[ErrorEventListItem]
+    total: int
+    limit: int
+    offset: int
+
+
+class ErrorAnalysisResponse(BaseModel):
+    id: int
+    error_event_id: int
+    analysis_text: str
+    model: str
+    confidence: Optional[str]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ErrorEventWithAnalysis(BaseModel):
+    event: ErrorEventDetail
+    analysis: Optional[ErrorAnalysisResponse] = None
 
