@@ -17,19 +17,32 @@ from app.utils.crud import (
     create_project,
     get_project_by_id,
     get_projects,
-    get_project_error_count
+    get_project_error_count,
+    get_or_create_user
 )
+from app.utils.auth import get_current_user
 from app.celery import analyze_error_event
 
 # Configure logging
 logger = logging.getLogger(__name__)
 
-# Create tables only in development
-if os.getenv("ENV", "development") == "development":
-    from app.database.database import Base
-    Base.metadata.create_all(bind=engine)
-
 app = FastAPI(title="Error Ingestion API", version="1.0.0")
+
+# Create tables only in development (non-blocking, with error handling)
+# This is moved to a startup event to prevent blocking server startup
+@app.on_event("startup")
+async def create_tables():
+    """Create database tables on startup (non-blocking)"""
+    if os.getenv("ENV", "development") == "development":
+        try:
+            from app.database.database import Base
+            # This will only create tables that don't exist
+            Base.metadata.create_all(bind=engine)
+            logger.info("Database tables checked/created successfully")
+        except Exception as e:
+            logger.warning(f"Failed to create database tables (non-critical): {e}")
+            # Don't fail startup if tables can't be created
+            # They might already exist or database might not be accessible yet
 
 # CORS middleware for development
 app.add_middleware(
@@ -76,8 +89,64 @@ async def create_event(
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """Health check endpoint (public)"""
     return {"status": "ok"}
+
+
+@app.post("/api/v1/auth/sync-user", response_model=schemas.UserResponse)
+async def sync_user(
+    user_data: schemas.UserSyncRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Sync user from GitHub OAuth session.
+    Creates or updates user and returns API token.
+    This endpoint is public (called after GitHub login).
+    """
+    try:
+        logger.info(f"Received sync-user request: github_id={user_data.github_id}, username={user_data.username}, email={user_data.email}")
+        
+        # Validate required fields
+        if not user_data.github_id:
+            raise HTTPException(status_code=400, detail="github_id is required and cannot be empty")
+        if not user_data.username:
+            raise HTTPException(status_code=400, detail="username is required and cannot be empty")
+        
+        # Strip whitespace and validate non-empty after stripping
+        github_id = str(user_data.github_id).strip()
+        username = str(user_data.username).strip()
+        
+        if not github_id:
+            raise HTTPException(status_code=400, detail="github_id cannot be empty after trimming whitespace")
+        if not username:
+            raise HTTPException(status_code=400, detail="username cannot be empty after trimming whitespace")
+        
+        user = get_or_create_user(
+            db=db,
+            github_id=github_id,
+            username=username,
+            email=str(user_data.email).strip() if user_data.email else None,
+            name=str(user_data.name).strip() if user_data.name else None,
+            avatar_url=str(user_data.avatar_url).strip() if user_data.avatar_url else None
+        )
+        
+        logger.info(f"Successfully synced user: id={user.id}, github_id={user.github_id}, username={user.username}")
+        
+        return schemas.UserResponse(
+            id=user.id,
+            github_id=user.github_id,
+            username=user.username,
+            email=user.email,
+            name=user.name,
+            avatar_url=user.avatar_url,
+            api_token=user.api_token,
+            created_at=user.created_at
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Failed to sync user: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
 @app.get("/api/v1/events", response_model=schemas.ErrorEventListResponse)
@@ -90,6 +159,7 @@ async def list_error_events(
     end_date: Optional[str] = Query(None, description="Filter events until this date (ISO format)"),
     limit: int = Query(50, ge=1, le=1000, description="Maximum number of events to return"),
     offset: int = Query(0, ge=0, description="Number of events to skip"),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -170,6 +240,7 @@ async def list_error_events(
 @app.get("/api/v1/events/{event_id}", response_model=schemas.ErrorEventDetail)
 async def get_error_event(
     event_id: int,
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -196,6 +267,7 @@ async def get_error_event(
 @app.get("/api/v1/events/{event_id}/analysis", response_model=schemas.ErrorAnalysisResponse)
 async def get_error_analysis(
     event_id: int,
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -227,6 +299,7 @@ async def get_error_analysis(
 @app.get("/api/v1/events/{event_id}/with-analysis", response_model=schemas.ErrorEventWithAnalysis)
 async def get_error_event_with_analysis(
     event_id: int,
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -271,6 +344,7 @@ async def list_error_analyses(
     confidence: Optional[str] = Query(None, description="Filter by confidence level"),
     limit: int = Query(50, ge=1, le=1000, description="Maximum number of analyses to return"),
     offset: int = Query(0, ge=0, description="Number of analyses to skip"),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -311,6 +385,7 @@ async def list_error_analyses(
 @app.post("/api/v1/projects", response_model=schemas.ProjectResponse)
 async def create_project_endpoint(
     project: schemas.ProjectCreate,
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -341,6 +416,7 @@ async def create_project_endpoint(
 async def list_projects(
     limit: int = Query(100, ge=1, le=1000, description="Maximum number of projects to return"),
     offset: int = Query(0, ge=0, description="Number of projects to skip"),
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """
@@ -374,6 +450,7 @@ async def list_projects(
 @app.get("/api/v1/projects/{project_id}", response_model=schemas.ProjectResponse)
 async def get_project(
     project_id: int,
+    current_user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """

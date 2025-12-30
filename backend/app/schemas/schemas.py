@@ -127,3 +127,26 @@ class ProjectListResponse(BaseModel):
     projects: List[ProjectResponse]
     total: int
 
+
+# User management schemas
+class UserSyncRequest(BaseModel):
+    github_id: str = Field(..., description="GitHub user ID")
+    username: str = Field(..., description="GitHub username")
+    email: Optional[str] = Field(None, description="GitHub email")
+    name: Optional[str] = Field(None, description="GitHub display name")
+    avatar_url: Optional[str] = Field(None, description="GitHub avatar URL")
+
+
+class UserResponse(BaseModel):
+    id: int
+    github_id: str
+    username: str
+    email: Optional[str]
+    name: Optional[str]
+    avatar_url: Optional[str]
+    api_token: str
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+

@@ -1,50 +1,117 @@
-import { Header } from "@/components/Header";
-import { api, ErrorEvent } from "@/lib/api";
+"use client";
+
+import { ClientHeader } from "@/components/ClientHeader";
+import { api, ErrorEvent, Project } from "@/lib/api";
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
-import { notFound } from "next/navigation";
 import { SdkSetup } from "@/components/SdkSetup";
+import { UserSync } from "@/components/UserSync";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 
-export default async function ProjectDetailPage({
-  params,
-}: {
-  params: Promise<{ projectId: string }>;
-}) {
-  const { projectId } = await params;
+export default function ProjectDetailPage() {
+  const params = useParams();
+  const projectId = params.projectId as string;
   const projectIdNum = parseInt(projectId, 10);
 
-  if (isNaN(projectIdNum)) {
-    notFound();
+  const [project, setProject] = useState<Project | null>(null);
+  const [errors, setErrors] = useState<ErrorEvent[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (isNaN(projectIdNum)) {
+      setError("Invalid project ID");
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        // Wait a bit for token to be available
+        await new Promise<void>((resolve) => {
+          const token = localStorage.getItem('debug_ai_api_token');
+          if (token) {
+            resolve();
+            return;
+          }
+          // Wait for sync event or timeout
+          const timeout = setTimeout(resolve, 2000);
+          const handler = () => {
+            clearTimeout(timeout);
+            window.removeEventListener('user-synced', handler);
+            resolve();
+          };
+          window.addEventListener('user-synced', handler, { once: true });
+        });
+
+        // Fetch project
+        const projectData = await api.getProject(projectIdNum);
+        setProject(projectData);
+
+        // Fetch errors
+        try {
+          const response = await api.getErrorEvents({
+            project_key: projectData.project_key,
+            limit: 50,
+            offset: 0,
+          });
+          setErrors(response.events);
+        } catch (e) {
+          console.error('Failed to fetch errors:', e);
+          setErrors([]);
+        }
+      } catch (e) {
+        console.error('Failed to fetch project:', e);
+        setError(e instanceof Error ? e.message : "Failed to load project");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [projectIdNum]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserSync />
+        <ClientHeader />
+        <main className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <p className="text-gray-500">Loading project...</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
-  let project;
-  let errors: ErrorEvent[] = [];
-  let error: string | null = null;
-
-  try {
-    project = await api.getProject(projectIdNum);
-  } catch (e) {
-    error = e instanceof Error ? e.message : "Failed to load project";
-  }
-
-  if (!project) {
-    notFound();
-  }
-
-  try {
-    const response = await api.getErrorEvents({
-      project_key: project.project_key,
-      limit: 50,
-      offset: 0,
-    });
-    errors = response.events;
-  } catch (e) {
-    errors = [];
+  if (error || !project) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserSync />
+        <ClientHeader />
+        <main className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
+          <div className="mb-8">
+            <Link
+              href="/projects"
+              className="text-indigo-600 hover:text-indigo-700 text-sm mb-4 inline-block"
+            >
+              ← Back to Projects
+            </Link>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <p className="text-sm text-red-800">{error || "Project not found"}</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <UserSync />
+      <ClientHeader />
       
       <main className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
         <div className="mb-8">
@@ -63,12 +130,6 @@ export default async function ProjectDetailPage({
             </div>
           </div>
         </div>
-
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           <div className="lg:col-span-8 xl:col-span-9">

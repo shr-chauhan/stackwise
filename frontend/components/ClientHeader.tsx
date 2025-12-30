@@ -1,10 +1,26 @@
-import { auth } from "@/lib/auth";
+"use client";
+
+import { useEffect, useState } from "react";
 import { signOutAction } from "@/lib/actions";
 
-export async function Header() {
-  const session = await auth();
-  
-  // Note: User sync is handled in page components to avoid blocking header render
+/**
+ * Client-side Header component that fetches session data
+ */
+export function ClientHeader() {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/auth/session')
+      .then(res => res.json())
+      .then(data => {
+        setSession(data);
+        setLoading(false);
+      })
+      .catch(() => {
+        setLoading(false);
+      });
+  }, []);
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -16,7 +32,7 @@ export async function Header() {
             </a>
           </div>
           
-          {session && (
+          {!loading && session?.user && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 {session.user?.image && (

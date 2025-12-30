@@ -4,6 +4,7 @@ from typing import Optional, List, Tuple
 from datetime import datetime
 from app.database import models
 from app.schemas import schemas
+from app.utils.auth import generate_api_token
 
 
 def get_or_create_project(db: Session, project_key: str, project_name: str = None):
@@ -220,4 +221,58 @@ def get_projects(
 def get_project_error_count(db: Session, project_id: int) -> int:
     """Get the count of error events for a project"""
     return db.query(models.ErrorEvent).filter(models.ErrorEvent.project_id == project_id).count()
+
+
+def get_or_create_user(
+    db: Session,
+    github_id: str,
+    username: str,
+    email: Optional[str] = None,
+    name: Optional[str] = None,
+    avatar_url: Optional[str] = None
+) -> models.User:
+    """
+    Get existing user by GitHub ID or create new one.
+    Updates user info if user exists.
+    """
+    user = db.query(models.User).filter(models.User.github_id == github_id).first()
+    
+    if user:
+        # Update user info
+        user.username = username
+        if email:
+            user.email = email
+        if name:
+            user.name = name
+        if avatar_url:
+            user.avatar_url = avatar_url
+        db.commit()
+        db.refresh(user)
+        return user
+    
+    # Create new user with API token
+    api_token = generate_api_token()
+    user = models.User(
+        github_id=github_id,
+        username=username,
+        email=email,
+        name=name,
+        avatar_url=avatar_url,
+        api_token=api_token
+    )
+    
+    try:
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+        return user
+    except IntegrityError:
+        db.rollback()
+        # Retry in case of race condition
+        return db.query(models.User).filter(models.User.github_id == github_id).first()
+
+
+def get_user_by_id(db: Session, user_id: int) -> Optional[models.User]:
+    """Get user by ID"""
+    return db.query(models.User).filter(models.User.id == user_id).first()
 

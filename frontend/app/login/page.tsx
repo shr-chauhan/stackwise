@@ -11,6 +11,7 @@ export default async function LoginPage({
   const callbackUrl = params.callbackUrl || "/projects";
 
   // Redirect if already logged in
+  // User sync happens client-side via UserSync component
   if (session) {
     redirect(callbackUrl);
   }

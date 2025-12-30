@@ -25,9 +25,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     GitHub({
       clientId: process.env.GITHUB_CLIENT_ID || "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-      httpOptions: {
-        timeout: 60000, // 30 seconds timeout
-      },
     }),
   ],
   callbacks: {
@@ -38,7 +35,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.providerAccountId = account.providerAccountId;
       }
       if (profile) {
-        token.githubId = profile.id;
+        token.githubId = String(profile.id);  // Ensure it's a string
         token.username = profile.login;
         token.email = profile.email;
       }

@@ -1,23 +1,66 @@
-import { Header } from "@/components/Header";
+"use client";
+
+import { ClientHeader } from "@/components/ClientHeader";
 import { api, Project } from "@/lib/api";
 import Link from "next/link";
 import { Badge } from "@/components/Badge";
+import { UserSync } from "@/components/UserSync";
+import { useEffect, useState } from "react";
 
-export default async function ProjectsPage() {
-  let projects: Project[] = [];
-  let error: string | null = null;
+export default function ProjectsPage() {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  try {
-    const response = await api.getProjects();
-    projects = response.projects;
-  } catch (e) {
-    error = e instanceof Error ? e.message : "Failed to load projects";
-    projects = [];
-  }
+  useEffect(() => {
+    console.log('🔵 useEffect STARTED');
+    
+    const fetchProjects = async () => {
+      console.log('🟢 fetchProjects function called');
+      
+      try {
+        console.log('🟡 About to call api.getProjects()');
+        const response = await api.getProjects();
+        console.log('✅ API response:', response);
+        
+        if (response && response.projects) {
+          console.log('✅ Setting projects:', response.projects.length);
+          setProjects(response.projects);
+          setError(null);
+        } else {
+          console.error('❌ Invalid response:', response);
+          setError('Invalid response from server');
+          setProjects([]);
+        }
+      } catch (e) {
+        console.error('❌ Error in fetchProjects:', e);
+        const errorMessage = e instanceof Error ? e.message : "Failed to load projects";
+        setError(errorMessage);
+        setProjects([]);
+      } finally {
+        console.log('🟣 Setting loading to false');
+        setLoading(false);
+      }
+    };
+
+    console.log('🟠 Calling fetchProjects in 500ms');
+    const timer = setTimeout(() => {
+      console.log('🟠 Timer fired, calling fetchProjects');
+      fetchProjects();
+    }, 500);
+
+    return () => {
+      console.log('🔴 Cleanup: clearing timer');
+      clearTimeout(timer);
+    };
+  }, []);
+
+  console.log('🔴 ProjectsPage render - loading:', loading, 'projects:', projects.length, 'error:', error);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <UserSync />
+      <ClientHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="flex justify-between items-center mb-8">
@@ -35,61 +78,69 @@ export default async function ProjectsPage() {
           </Link>
         </div>
 
-        {error && (
+        {loading && (
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <p className="text-gray-500">Loading projects...</p>
+          </div>
+        )}
+
+        {!loading && error && (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
             <p className="text-sm text-red-800">{error}</p>
           </div>
         )}
 
-        {projects.length === 0 && !error ? (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500 mb-4">No projects yet</p>
-            <Link
-              href="/projects/new"
-              className="text-indigo-600 hover:text-indigo-700 font-medium"
-            >
-              Create your first project →
-            </Link>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {projects.map((project) => (
+        {!loading && !error && (
+          projects.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-12 text-center">
+              <p className="text-gray-500 mb-4">No projects yet</p>
               <Link
-                key={project.id}
-                href={`/projects/${project.id}`}
-                className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6"
+                href="/projects/new"
+                className="text-indigo-600 hover:text-indigo-700 font-medium"
               >
-                <div className="flex justify-between items-start mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900">
-                    {project.name}
-                  </h2>
-                </div>
-                
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Key:</span>
-                    <code className="text-sm bg-gray-100 px-2 py-1 rounded font-mono">
-                      {project.project_key}
-                    </code>
-                  </div>
-                  
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Errors:</span>
-                    <Badge variant={project.error_count && project.error_count > 0 ? "error" : "default"}>
-                      {project.error_count || 0}
-                    </Badge>
-                  </div>
-                  
-                  {project.repo_config && (
-                    <div className="text-sm text-gray-500">
-                      <span className="font-medium">Repo:</span>{" "}
-                      {project.repo_config.owner}/{project.repo_config.repo}
-                    </div>
-                  )}
-                </div>
+                Create your first project →
               </Link>
-            ))}
-          </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => (
+                <Link
+                  key={project.id}
+                  href={`/projects/${project.id}`}
+                  className="bg-white rounded-lg shadow hover:shadow-md transition-shadow p-6"
+                >
+                  <div className="flex justify-between items-start mb-4">
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      {project.name}
+                    </h2>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Key:</span>
+                      <code className="text-sm bg-gray-100 px-2 py-1 rounded font-mono">
+                        {project.project_key}
+                      </code>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">Errors:</span>
+                      <Badge variant={project.error_count && project.error_count > 0 ? "error" : "default"}>
+                        {project.error_count || 0}
+                      </Badge>
+                    </div>
+                    
+                    {project.repo_config && (
+                      <div className="text-sm text-gray-500">
+                        <span className="font-medium">Repo:</span>{" "}
+                        {project.repo_config.owner}/{project.repo_config.repo}
+                      </div>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )
         )}
       </main>
     </div>

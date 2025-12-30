@@ -1,42 +1,103 @@
-import { Header } from "@/components/Header";
-import { api } from "@/lib/api";
-import { Badge } from "@/components/Badge";
-import { notFound } from "next/navigation";
-import Link from "next/link";
+"use client";
 
-export default async function ErrorDetailPage({
-  params,
-}: {
-  params: Promise<{ projectId: string; errorId: string }>;
-}) {
-  const { projectId, errorId } = await params;
+import { ClientHeader } from "@/components/ClientHeader";
+import { api, ErrorEventWithAnalysis } from "@/lib/api";
+import { Badge } from "@/components/Badge";
+import Link from "next/link";
+import { UserSync } from "@/components/UserSync";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+
+export default function ErrorDetailPage() {
+  const params = useParams();
+  const projectId = params.projectId as string;
+  const errorId = params.errorId as string;
   const errorIdNum = parseInt(errorId, 10);
 
-  if (isNaN(errorIdNum)) {
-    notFound();
-  }
+  const [errorData, setErrorData] = useState<ErrorEventWithAnalysis | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  let errorData;
-  let error: string | null = null;
-
-  try {
-    errorData = await api.getErrorEventWithAnalysis(errorIdNum);
-  } catch (e) {
-    if (e instanceof Error && e.message.includes("404")) {
-      notFound();
+  useEffect(() => {
+    if (isNaN(errorIdNum)) {
+      setError("Invalid error ID");
+      setLoading(false);
+      return;
     }
-    error = e instanceof Error ? e.message : "Failed to load error details";
+
+    const fetchData = async () => {
+      try {
+        // Wait for token
+        await new Promise<void>((resolve) => {
+          const token = localStorage.getItem('debug_ai_api_token');
+          if (token) {
+            resolve();
+            return;
+          }
+          const timeout = setTimeout(resolve, 2000);
+          const handler = () => {
+            clearTimeout(timeout);
+            window.removeEventListener('user-synced', handler);
+            resolve();
+          };
+          window.addEventListener('user-synced', handler, { once: true });
+        });
+
+        const data = await api.getErrorEventWithAnalysis(errorIdNum);
+        setErrorData(data);
+      } catch (e) {
+        console.error('Failed to fetch error details:', e);
+        setError(e instanceof Error ? e.message : "Failed to load error details");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [errorIdNum]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserSync />
+        <ClientHeader />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="bg-white rounded-lg shadow p-12 text-center">
+            <p className="text-gray-500">Loading error details...</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
-  if (!errorData) {
-    notFound();
+  if (error || !errorData) {
+    return (
+      <div className="min-h-screen bg-gray-50">
+        <UserSync />
+        <ClientHeader />
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-8">
+            <Link
+              href={`/projects/${projectId}`}
+              className="text-indigo-600 hover:text-indigo-700 text-sm mb-4 inline-block"
+            >
+              ← Back to Project
+            </Link>
+          </div>
+          <div className="bg-red-50 border border-red-200 rounded-md p-4">
+            <p className="text-sm text-red-800">{error || "Error not found"}</p>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   const { event, analysis } = errorData;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Header />
+      <UserSync />
+      <ClientHeader />
       
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
@@ -48,12 +109,6 @@ export default async function ErrorDetailPage({
           </Link>
           <h1 className="text-3xl font-bold text-gray-900">Error Details</h1>
         </div>
-
-        {error && (
-          <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-sm text-red-800">{error}</p>
-          </div>
-        )}
 
         <div className="space-y-6">
           {/* Error Information */}

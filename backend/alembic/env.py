@@ -17,7 +17,7 @@ load_dotenv()
 
 # Import Base and models
 from app.database.database import Base
-from app.database.models import Project, ErrorEvent, ErrorAnalysis  # Import all models so Alembic can detect them
+from app.database.models import Project, ErrorEvent, ErrorAnalysis, User  # Import all models so Alembic can detect them
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
