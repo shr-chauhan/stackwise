@@ -1,37 +1,34 @@
 /**
  * NextAuth configuration for GitHub OAuth
- * 
- * NOTE: GitHub OAuth is currently disabled for development.
- * Uncomment the GitHub provider below when ready to enable authentication.
  */
 
 import NextAuth from "next-auth";
-// import GitHub from "next-auth/providers/github";
+import GitHub from "next-auth/providers/github";
 
 // Validate required environment variables
-// if (!process.env.GITHUB_CLIENT_ID) {
-//   console.warn("⚠️  GITHUB_CLIENT_ID is not set. GitHub OAuth will not work.");
-// }
-// if (!process.env.GITHUB_CLIENT_SECRET) {
-//   console.warn("⚠️  GITHUB_CLIENT_SECRET is not set. GitHub OAuth will not work.");
-// }
-// if (!process.env.AUTH_SECRET) {
-//   console.warn("⚠️  AUTH_SECRET is not set. Sessions will not be secure.");
-// }
+if (!process.env.GITHUB_CLIENT_ID) {
+  console.warn("⚠️  GITHUB_CLIENT_ID is not set. GitHub OAuth will not work.");
+}
+
+if (!process.env.GITHUB_CLIENT_SECRET) {
+  console.warn("⚠️  GITHUB_CLIENT_SECRET is not set. GitHub OAuth will not work.");
+}
+
+if (!process.env.AUTH_SECRET) {
+  console.warn("⚠️  AUTH_SECRET is not set. Sessions will not be secure.");
+}
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   // Trust the host header (needed for Next.js in development)
   trustHost: true,
   providers: [
-    // GitHub OAuth disabled for development
-    // Uncomment when ready to enable:
-    // GitHub({
-    //   clientId: process.env.GITHUB_CLIENT_ID || "",
-    //   clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
-    //   httpOptions: {
-    //     timeout: 30000, // 30 seconds timeout
-    //   },
-    // }),
+    GitHub({
+      clientId: process.env.GITHUB_CLIENT_ID || "",
+      clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
+      httpOptions: {
+        timeout: 60000, // 30 seconds timeout
+      },
+    }),
   ],
   callbacks: {
     async jwt({ token, account, profile }) {

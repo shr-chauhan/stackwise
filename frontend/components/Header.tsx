@@ -1,17 +1,8 @@
-// import { auth } from "@/lib/auth";
-// import { signOutAction } from "@/lib/actions";
+import { auth } from "@/lib/auth";
+import { signOutAction } from "@/lib/actions";
 
-/**
- * Header component - Authentication disabled for development
- * 
- * NOTE: User info and sign out are hidden when auth is disabled.
- * Uncomment auth code below when ready to enable authentication.
- * 
- * When auth is enabled, this should be an async Server Component.
- */
-export function Header() {
-  // Authentication disabled - no session check
-  // When auth is enabled, uncomment: const session = await auth();
+export async function Header() {
+  const session = await auth();
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -21,14 +12,9 @@ export function Header() {
             <a href="/projects" className="text-xl font-bold text-gray-900">
               Debug AI
             </a>
-            <span className="ml-4 text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">
-              Dev Mode (No Auth)
-            </span>
           </div>
           
-          {/* User info hidden when auth is disabled */}
-          {/* Uncomment below when ready to enable authentication: */}
-          {/* {session && (
+          {session && (
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2">
                 {session.user?.image && (
@@ -52,7 +38,7 @@ export function Header() {
                 </button>
               </form>
             </div>
-          )} */}
+          )}
         </div>
       </div>
     </header>
