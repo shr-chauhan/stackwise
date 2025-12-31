@@ -99,11 +99,26 @@ async function apiRequest<T>(
         errorDetail = response.statusText;
       }
       
-      console.error(`API request failed: ${response.status} ${response.statusText}`, {
-        url,
-        status: response.status,
-        detail: errorDetail
-      });
+      // If we get a 401, the token is invalid - clear it and trigger re-sync
+      if (response.status === 401 && requireAuth && token) {
+        console.warn('401 Unauthorized - clearing invalid token and triggering re-sync');
+        clearApiToken();
+        // Dispatch event to trigger user re-sync
+        window.dispatchEvent(new CustomEvent('token-invalid'));
+      }
+      
+      // If we get a 403 without a token, it's expected during initial load - don't log as error
+      const isExpectedAuthError = (response.status === 401 || response.status === 403) && !token;
+      
+      if (!isExpectedAuthError) {
+        console.error(`API request failed: ${response.status} ${response.statusText}`, {
+          url,
+          status: response.status,
+          detail: errorDetail
+        });
+      } else {
+        console.log(`API request returned ${response.status} (expected - no token yet)`);
+      }
       
       throw new ApiClientError(
         `API request failed: ${errorDetail}`,

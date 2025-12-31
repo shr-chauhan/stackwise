@@ -13,7 +13,9 @@ class User(Base):
     email = Column(String, nullable=True, index=True)  # GitHub email
     name = Column(String, nullable=True)  # GitHub display name
     avatar_url = Column(String, nullable=True)  # GitHub avatar URL
-    api_token = Column(String, unique=True, index=True, nullable=False)  # API authentication token
+    # api_token removed - using JWT tokens instead (stateless, no DB storage needed)
+    # Keeping column temporarily nullable for migration, will be removed in migration
+    api_token = Column(String, unique=True, index=True, nullable=True)  # DEPRECATED: Use JWT tokens
     created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False)
 

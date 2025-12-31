@@ -20,7 +20,7 @@ from app.utils.crud import (
     get_project_error_count,
     get_or_create_user
 )
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, create_access_token
 from app.celery import analyze_error_event
 
 # Configure logging
@@ -132,6 +132,9 @@ async def sync_user(
         
         logger.info(f"Successfully synced user: id={user.id}, github_id={user.github_id}, username={user.username}")
         
+        # Generate JWT access token
+        access_token = create_access_token(user.id, user.github_id)
+        
         return schemas.UserResponse(
             id=user.id,
             github_id=user.github_id,
@@ -139,7 +142,7 @@ async def sync_user(
             email=user.email,
             name=user.name,
             avatar_url=user.avatar_url,
-            api_token=user.api_token,
+            api_token=access_token,  # JWT token (keeping field name for backward compatibility)
             created_at=user.created_at
         )
     except HTTPException:

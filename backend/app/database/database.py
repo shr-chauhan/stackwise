@@ -7,11 +7,12 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Database configuration from environment variables
-# Support both DATABASE_URL and individual components
+# Prefer DATABASE_URL (recommended for production/Railway/Render)
+# Falls back to individual components if DATABASE_URL not provided
 if os.getenv("DATABASE_URL"):
     DATABASE_URL = os.getenv("DATABASE_URL")
 else:
-    # Build DATABASE_URL from individual components
+    # Build DATABASE_URL from individual components (fallback for local development)
     db_user = os.getenv("DATABASE_USER", "postgres")
     db_password = os.getenv("DATABASE_PASSWORD", "postgres")
     db_host = os.getenv("DATABASE_HOST", "localhost")

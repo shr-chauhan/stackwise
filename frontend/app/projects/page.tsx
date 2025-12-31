@@ -18,6 +18,9 @@ export default function ProjectsPage() {
     const fetchProjects = async () => {
       console.log('🟢 fetchProjects function called');
       
+      setLoading(true);
+      setError(null);
+      
       try {
         console.log('🟡 About to call api.getProjects()');
         const response = await api.getProjects();
@@ -33,9 +36,25 @@ export default function ProjectsPage() {
           setProjects([]);
         }
       } catch (e) {
-        console.error('❌ Error in fetchProjects:', e);
+        // Only log as error if it's not a 401/403 (expected during initial load)
+        const isAuthError = e instanceof Error && (
+          e.message.includes('401') || 
+          e.message.includes('403') ||
+          e.message.includes('Unauthorized') ||
+          e.message.includes('Forbidden')
+        );
+        
+        if (!isAuthError) {
+          console.error('❌ Error in fetchProjects:', e);
+        } else {
+          console.log('🟡 Auth error (expected during initial load), will retry after sync');
+        }
+        
         const errorMessage = e instanceof Error ? e.message : "Failed to load projects";
-        setError(errorMessage);
+        // Don't show auth errors in UI - they'll be resolved after sync
+        if (!isAuthError) {
+          setError(errorMessage);
+        }
         setProjects([]);
       } finally {
         console.log('🟣 Setting loading to false');
@@ -43,15 +62,65 @@ export default function ProjectsPage() {
       }
     };
 
-    console.log('🟠 Calling fetchProjects in 500ms');
-    const timer = setTimeout(() => {
-      console.log('🟠 Timer fired, calling fetchProjects');
+    // Wait for token to be available before making first API call
+    const waitForTokenAndFetch = async () => {
+      const { getApiToken } = await import('@/lib/api');
+      
+      // Check if token already exists
+      const existingToken = getApiToken();
+      if (existingToken) {
+        console.log('🟡 Token exists, fetching projects immediately');
+        fetchProjects();
+        return;
+      }
+      
+      // Wait for user-synced event (with timeout)
+      console.log('🟡 No token found, waiting for user sync...');
+      const timeout = setTimeout(() => {
+        console.log('🟡 Token wait timeout, attempting fetch anyway');
+        fetchProjects();
+      }, 5000); // 5 second timeout
+      
+      const handleUserSynced = () => {
+        console.log('🟢 User synced event received, fetching projects');
+        clearTimeout(timeout);
+        fetchProjects();
+      };
+      
+      window.addEventListener('user-synced', handleUserSynced, { once: true });
+      
+      // Also check periodically if token becomes available
+      const checkInterval = setInterval(() => {
+        const token = getApiToken();
+        if (token) {
+          console.log('🟡 Token found during periodic check');
+          clearTimeout(timeout);
+          clearInterval(checkInterval);
+          window.removeEventListener('user-synced', handleUserSynced);
+          fetchProjects();
+        }
+      }, 200);
+      
+      // Cleanup interval after timeout
+      setTimeout(() => {
+        clearInterval(checkInterval);
+      }, 5000);
+    };
+
+    // Start the wait-and-fetch process
+    waitForTokenAndFetch();
+
+    // Listen for user-synced event to retry after token refresh (for subsequent syncs)
+    const handleUserSyncedRetry = () => {
+      console.log('🟢 User synced event received (retry)');
       fetchProjects();
-    }, 500);
+    };
+
+    window.addEventListener('user-synced', handleUserSyncedRetry);
 
     return () => {
-      console.log('🔴 Cleanup: clearing timer');
-      clearTimeout(timer);
+      console.log('🔴 Cleanup: removing event listener');
+      window.removeEventListener('user-synced', handleUserSyncedRetry);
     };
   }, []);
 

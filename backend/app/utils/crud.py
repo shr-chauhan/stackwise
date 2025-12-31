@@ -4,7 +4,6 @@ from typing import Optional, List, Tuple
 from datetime import datetime
 from app.database import models
 from app.schemas import schemas
-from app.utils.auth import generate_api_token
 
 
 def get_or_create_project(db: Session, project_key: str, project_name: str = None):
@@ -250,15 +249,13 @@ def get_or_create_user(
         db.refresh(user)
         return user
     
-    # Create new user with API token
-    api_token = generate_api_token()
+    # Create new user (no API token needed - JWT tokens are generated on demand)
     user = models.User(
         github_id=github_id,
         username=username,
         email=email,
         name=name,
-        avatar_url=avatar_url,
-        api_token=api_token
+        avatar_url=avatar_url
     )
     
     try:

@@ -29,10 +29,12 @@ if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
 # Get database URL from environment (same as app/database.py)
+# Prefer DATABASE_URL (recommended for production/Railway/Render)
+# Falls back to individual components if DATABASE_URL not provided
 if os.getenv("DATABASE_URL"):
     database_url = os.getenv("DATABASE_URL")
 else:
-    # Build DATABASE_URL from individual components
+    # Build DATABASE_URL from individual components (fallback for local development)
     db_user = os.getenv("DATABASE_USER", "postgres")
     db_password = os.getenv("DATABASE_PASSWORD", "postgres")
     db_host = os.getenv("DATABASE_HOST", "localhost")
