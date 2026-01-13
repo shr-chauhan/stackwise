@@ -4,7 +4,7 @@ Authentication utilities for JWT token validation
 import os
 import jwt
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict
 from sqlalchemy.orm import Session
 from fastapi import HTTPException, Security, Depends
@@ -39,12 +39,12 @@ def create_access_token(user_id: int, github_id: str) -> str:
     Returns:
         Encoded JWT token string
     """
-    expiration = datetime.utcnow() + timedelta(days=JWT_EXPIRATION_DAYS)
+    expiration = datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRATION_DAYS)
     payload = {
         "sub": str(user_id),  # Subject (user ID)
         "github_id": github_id,
         "exp": expiration,
-        "iat": datetime.utcnow(),  # Issued at
+        "iat": datetime.now(timezone.utc),  # Issued at
     }
     
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)

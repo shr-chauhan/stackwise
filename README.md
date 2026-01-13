@@ -108,7 +108,7 @@ cd backend
 celery -A app.celery.celery_app worker --loglevel=info --queues=ai_analysis
 ```
 
-See [QUICK_START_CELERY.md](./backend/QUICK_START_CELERY.md) for detailed setup.
+See [CELERY_SETUP.md](./backend/CELERY_SETUP.md) for detailed setup.
 
 ### 3. Start Frontend Dashboard
 
@@ -229,8 +229,7 @@ curl http://localhost:3000/test-error
 - **[SDK README](./sdks/node/README.md)** - SDK installation and usage
 - **[Alembic Setup](./backend/ALEMBIC_SETUP.md)** - Database migration guide
 - **[AI Debugging](./backend/AI_DEBUGGING.md)** - AI-powered error analysis documentation
-- **[Celery Setup](./backend/CELERY_SETUP.md)** - Celery worker setup for AI analysis
-- **[Quick Start Celery](./backend/QUICK_START_CELERY.md)** - Quick Celery setup guide
+- **[Celery Setup](./backend/CELERY_SETUP.md)** - Celery worker setup for AI analysis (includes quick start)
 - **[Deployment Guide](./DEPLOYMENT.md)** - Docker Compose deployment (single & distributed)
 
 ## Configuration
@@ -369,8 +368,9 @@ See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for:
 
 ## Contributing
 
-We welcome contributions to StackWise! Please keep in mind:
+We welcome contributions to StackWise! Please see [CONTRIBUTING.md](./CONTRIBUTING.md) for guidelines on how to contribute.
 
+Key points:
 - **PRs are welcome** - We appreciate all contributions, big or small
 - **Large changes should be discussed first** - For significant changes, please open an issue first to discuss the approach
 - **This is a self-hosted project** - StackWise is designed to be self-hosted, not a SaaS offering

@@ -1,10 +1,18 @@
 import logging
 import os
+from contextlib import asynccontextmanager
+from pathlib import Path
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Depends, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from typing import Optional, List
 from datetime import datetime
+
+# Load environment variables from .env file
+# Look for .env in the backend directory (where this file is located)
+env_path = Path(__file__).parent.parent / '.env'
+load_dotenv(dotenv_path=env_path)
 
 from app.database import get_db, engine, models
 from app.schemas import schemas
@@ -25,15 +33,19 @@ from app.utils.auth import get_current_user, create_access_token
 from app.celery import analyze_error_event
 
 # Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
-app = FastAPI(title="Error Ingestion API", version="1.0.0")
 
-# Create tables only in development (non-blocking, with error handling)
-# This is moved to a startup event to prevent blocking server startup
-@app.on_event("startup")
-async def create_tables():
-    """Create database tables on startup (non-blocking)"""
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Lifespan context manager for startup and shutdown events."""
+    # Startup
+    # In development, automatically create tables if they don't exist (convenient for local dev)
+    # In production, use Alembic migrations: alembic upgrade head
     if os.getenv("ENV", "development") == "development":
         try:
             from app.database.database import Base
@@ -41,9 +53,15 @@ async def create_tables():
             Base.metadata.create_all(bind=engine)
             logger.info("Database tables checked/created successfully")
         except Exception as e:
+            
             logger.warning(f"Failed to create database tables (non-critical): {e}")
             # Don't fail startup if tables can't be created
             # They might already exist or database might not be accessible yet
+    yield
+    # Shutdown (if needed in the future)
+
+
+app = FastAPI(title="Error Ingestion API", version="1.0.0", lifespan=lifespan)
 
 # CORS middleware for development
 app.add_middleware(

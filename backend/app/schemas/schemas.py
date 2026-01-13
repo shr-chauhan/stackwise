@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 class EventCreate(BaseModel):
@@ -26,30 +26,30 @@ class EventCreate(BaseModel):
                 return datetime.fromisoformat(v)
             except (ValueError, AttributeError):
                 # Fallback to current time if parsing fails
-                return datetime.utcnow()
-        return datetime.utcnow()
+                return datetime.now(timezone.utc)
+        return datetime.now(timezone.utc)
 
 
 class EventResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     timestamp: datetime
     message: str
 
-    class Config:
-        from_attributes = True
-
 
 # Response schemas for fetching errors
 class ProjectInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     project_key: str
     name: str
 
-    class Config:
-        from_attributes = True
-
 
 class ErrorEventDetail(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     timestamp: datetime
     status_code: Optional[int]
@@ -57,11 +57,10 @@ class ErrorEventDetail(BaseModel):
     created_at: datetime
     project: ProjectInfo
 
-    class Config:
-        from_attributes = True
-
 
 class ErrorEventListItem(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     timestamp: datetime
     status_code: Optional[int]
@@ -73,9 +72,6 @@ class ErrorEventListItem(BaseModel):
     created_at: datetime
     has_analysis: bool = False
 
-    class Config:
-        from_attributes = True
-
 
 class ErrorEventListResponse(BaseModel):
     events: List[ErrorEventListItem]
@@ -85,6 +81,8 @@ class ErrorEventListResponse(BaseModel):
 
 
 class ErrorAnalysisResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     error_event_id: int
     analysis_text: str
@@ -92,9 +90,6 @@ class ErrorAnalysisResponse(BaseModel):
     confidence: Optional[str]
     has_source_code: bool  # True if source code was used in analysis, False if only stack trace
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
 
 class ErrorEventWithAnalysis(BaseModel):
@@ -127,6 +122,8 @@ class ProjectUpdate(BaseModel):
 
 
 class ProjectResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     project_key: str
     name: str
@@ -136,9 +133,6 @@ class ProjectResponse(BaseModel):
     repo_config: Optional[Dict[str, Any]] = None
     created_at: datetime
     error_count: Optional[int] = 0  # Will be populated by query
-
-    class Config:
-        from_attributes = True
 
 
 class ProjectListResponse(BaseModel):
@@ -156,6 +150,8 @@ class UserSyncRequest(BaseModel):
 
 
 class UserResponse(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    
     id: int
     github_id: str
     username: str
@@ -164,7 +160,4 @@ class UserResponse(BaseModel):
     avatar_url: Optional[str]
     api_token: str
     created_at: datetime
-
-    class Config:
-        from_attributes = True
 
