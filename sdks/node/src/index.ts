@@ -11,11 +11,14 @@ const INGESTED = Symbol.for('error_ingested');
  *   /users/550e8400-e29b-41d4-a716-446655440000 -> /users/:id
  */
 function sanitizePath(path: string): string {
-  // Replace numeric IDs (e.g., /123, /456)
-  let sanitized = path.replace(/\/\d+/g, '/:id');
+  let sanitized = path;
   
-  // Replace UUIDs (e.g., /550e8400-e29b-41d4-a716-446655440000)
+  // Replace UUIDs FIRST (e.g., /550e8400-e29b-41d4-a716-446655440000)
+  // Must check UUIDs before numeric IDs since UUIDs can start with digits
   sanitized = sanitized.replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id');
+  
+  // Replace numeric IDs (e.g., /123, /456)
+  sanitized = sanitized.replace(/\/\d+/g, '/:id');
   
   return sanitized;
 }
