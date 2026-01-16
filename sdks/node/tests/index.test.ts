@@ -1,12 +1,8 @@
-/**
- * Tests for error ingestion SDK middleware.
- */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Request, Response, NextFunction } from 'express';
 import axios from 'axios';
 import { errorIngestionMiddleware, ErrorIngestionOptions } from '../src/index';
 
-// Mock axios
 vi.mock('axios');
 const mockedAxios = vi.mocked(axios);
 
@@ -17,17 +13,14 @@ describe('errorIngestionMiddleware', () => {
   let options: ErrorIngestionOptions;
 
   beforeEach(() => {
-    // Reset mocks
     vi.clearAllMocks();
 
-    // Setup options
     options = {
       apiUrl: 'https://api.example.com',
       projectKey: 'test-project',
       timeout: 5000,
     };
 
-    // Setup mock request
     mockRequest = {
       method: 'GET',
       path: '/users/123',
@@ -35,15 +28,11 @@ describe('errorIngestionMiddleware', () => {
       headers: {},
     };
 
-    // Setup mock response
     mockResponse = {
       statusCode: 500,
     };
 
-    // Setup mock next function
     mockNext = vi.fn();
-
-    // Mock axios.post to resolve successfully
     mockedAxios.post.mockResolvedValue({ status: 200 });
   });
 
@@ -58,10 +47,8 @@ describe('errorIngestionMiddleware', () => {
     const middleware = errorIngestionMiddleware(options);
     middleware(error as Error, mockRequest as Request, mockResponse as Response, mockNext);
 
-    // Wait for async operation
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Verify axios.post was called
     expect(mockedAxios.post).toHaveBeenCalledTimes(1);
     expect(mockedAxios.post).toHaveBeenCalledWith(
       'https://api.example.com/api/v1/events',
@@ -79,7 +66,6 @@ describe('errorIngestionMiddleware', () => {
       })
     );
 
-    // Verify next was called
     expect(mockNext).toHaveBeenCalledWith(error);
   });
 
@@ -159,7 +145,7 @@ describe('errorIngestionMiddleware', () => {
   });
 
   it('should use default statusCode 500 if not provided', async () => {
-    mockResponse.statusCode = 200; // Default response status
+    mockResponse.statusCode = 200;
 
     const error = new Error('Test error');
     const middleware = errorIngestionMiddleware(options);
@@ -204,9 +190,7 @@ describe('errorIngestionMiddleware', () => {
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Should not call axios.post
     expect(mockedAxios.post).not.toHaveBeenCalled();
-    // But should still call next
     expect(mockNext).toHaveBeenCalledWith(error);
   });
 
@@ -216,14 +200,12 @@ describe('errorIngestionMiddleware', () => {
     const error = new Error('Test error');
     const middleware = errorIngestionMiddleware(options);
     
-    // Should not throw
     expect(() => {
       middleware(error as Error, mockRequest as Request, mockResponse as Response, mockNext);
     }).not.toThrow();
 
     await new Promise(resolve => setTimeout(resolve, 100));
 
-    // Should still call next
     expect(mockNext).toHaveBeenCalledWith(error);
   });
 
@@ -257,7 +239,6 @@ describe('errorIngestionMiddleware', () => {
     
     expect(eventData.timestamp).toBeDefined();
     expect(typeof eventData.timestamp).toBe('string');
-    // Should be valid ISO string
     expect(() => new Date(eventData.timestamp)).not.toThrow();
   });
 });

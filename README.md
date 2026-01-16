@@ -14,6 +14,49 @@ Stackwise provides a complete solution for error tracking and debugging:
 - **PostgreSQL Storage**: Efficient storage with JSONB payloads
 - **Celery Workers**: Asynchronous AI analysis pipeline
 
+## Why StackWise?
+
+StackWise was built for small teams and early-stage systems where full observability stacks (Prometheus, OpenTelemetry, hosted error monitoring tools) are often too heavy to adopt early.
+
+Instead of focusing on metrics and alerts, StackWise focuses on **debugging fidelity**: capturing rich error context (stack traces, request details) and using AI to perform first-level analysis directly against relevant source code.
+
+It is designed to be:
+- **Lightweight to integrate** - Simple Express middleware, no complex instrumentation
+- **Fully self-hosted** - Your data stays in your infrastructure
+- **Debug-first rather than alert-first** - Get actionable insights, not just notifications
+- **Friendly to monoliths and small services** - Works great before you need distributed tracing
+
+## Quick Start
+
+### Docker Compose (Recommended)
+
+```bash
+git clone https://github.com/your-org/stackwise
+cd stackwise
+
+# Set up environment
+cp env.production.example .env
+# Edit .env with required values:
+#   - POSTGRES_PASSWORD (strong password)
+#   - JWT_SECRET (generate: python3 -c "import secrets; print(secrets.token_urlsafe(32))")
+#   - AUTH_SECRET (generate: openssl rand -base64 32)
+#   - OPENAI_API_KEY (your OpenAI API key)
+#   - GITHUB_CLIENT_ID and GITHUB_CLIENT_SECRET (for OAuth)
+
+# Start all services
+docker-compose up -d
+
+# Access the dashboard
+# Frontend: http://localhost:3000
+# Backend API: http://localhost:8000
+```
+
+See [DEPLOYMENT.md](./DEPLOYMENT.md) for detailed setup instructions.
+
+### Manual Setup
+
+For development or custom deployments, see the [detailed setup guide](#detailed-setup) below.
+
 ## Architecture
 
 ```
@@ -70,7 +113,50 @@ Stackwise provides a complete solution for error tracking and debugging:
 └── example/          # Example Express app
 ```
 
-## Quick Start
+## Features
+
+### SDK Features
+- ✅ Express error-handling middleware
+- ✅ Automatic error capture (message, stack, method, path, status code)
+- ✅ Path sanitization (replaces IDs with `:id` to reduce cardinality)
+- ✅ Non-blocking (doesn't interrupt request handling)
+- ✅ Duplicate prevention (symbol flag prevents double ingestion)
+- ✅ TypeScript support with type definitions
+
+### AI Analysis Features
+- ✅ Automatic analysis for errors (status_code >= 500)
+- ✅ Stack trace parsing and file path extraction
+- ✅ Source code context from Git repositories
+- ✅ LLM-powered error debugging (OpenAI GPT models)
+- ✅ Confidence scoring and model tracking
+- ✅ Source code usage tracking
+
+### Backend Features
+- ✅ RESTful API with FastAPI
+- ✅ Request validation with Pydantic
+- ✅ PostgreSQL storage with JSONB payloads
+- ✅ Automatic project creation
+- ✅ Database migrations with Alembic
+- ✅ Comprehensive error logging
+- ✅ Thread-safe project creation
+- ✅ GitHub OAuth authentication
+- ✅ User and project management
+- ✅ Asynchronous AI analysis with Celery
+- ✅ Source code fetching from Git repositories
+
+### Frontend Features
+- ✅ Modern Next.js dashboard with TypeScript
+- ✅ GitHub OAuth authentication
+- ✅ Project management (create, view, edit projects)
+- ✅ Error event viewing and filtering
+- ✅ AI analysis results display
+- ✅ Repository configuration
+- ✅ SDK setup instructions
+- ✅ Responsive design with Tailwind CSS
+
+## Detailed Setup
+
+For manual setup without Docker Compose:
 
 ### 1. Start Backend
 
@@ -128,19 +214,7 @@ npm run dev
 
 Frontend will be available at `http://localhost:3000`
 
-### 4. Install SDK
-
-```bash
-cd sdks/node
-
-# Install dependencies
-npm install
-
-# Build TypeScript
-npm run build
-```
-
-### 3. Use in Your Express App
+### 4. Use SDK in Your Express App
 
 ```javascript
 const express = require('express');
@@ -165,62 +239,6 @@ app.get('/api/users/:id', async (req, res, next) => {
 
 app.listen(3000);
 ```
-
-### 5. Test with Example App
-
-```bash
-cd example
-
-# Install dependencies
-npm install
-
-# Run example
-npm start
-
-# Trigger test error
-curl http://localhost:3000/test-error
-```
-
-## Features
-
-### SDK Features
-- ✅ Express error-handling middleware
-- ✅ Automatic error capture (message, stack, method, path, status code)
-- ✅ Path sanitization (replaces IDs with `:id` to reduce cardinality)
-- ✅ Non-blocking (doesn't interrupt request handling)
-- ✅ Duplicate prevention (symbol flag prevents double ingestion)
-- ✅ TypeScript support with type definitions
-
-### Backend Features
-- ✅ RESTful API with FastAPI
-- ✅ Request validation with Pydantic
-- ✅ PostgreSQL storage with JSONB payloads
-- ✅ Automatic project creation
-- ✅ Database migrations with Alembic
-- ✅ Comprehensive error logging
-- ✅ Thread-safe project creation
-- ✅ GitHub OAuth authentication
-- ✅ User and project management
-- ✅ Asynchronous AI analysis with Celery
-- ✅ Source code fetching from Git repositories
-
-### Frontend Features
-- ✅ Modern Next.js dashboard with TypeScript
-- ✅ GitHub OAuth authentication
-- ✅ Project management (create, view, edit projects)
-- ✅ Error event viewing and filtering
-- ✅ AI analysis results display
-- ✅ Repository configuration
-- ✅ SDK setup instructions
-- ✅ Responsive design with Tailwind CSS
-
-### AI Analysis Features
-- ✅ Automatic analysis for errors (status_code >= 500)
-- ✅ Stack trace parsing and file path extraction
-- ✅ Source code context from Git repositories
-- ✅ LLM-powered error debugging (OpenAI GPT models)
-- ✅ Confidence scoring and model tracking
-- ✅ Source code usage tracking
 
 ## Documentation
 
@@ -358,6 +376,9 @@ See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for:
 
 ## Next Steps (Future Phases)
 
+StackWise is designed with extensibility in mind. Possible future directions include:
+
+**Core Features:**
 - Error grouping and deduplication
 - Real-time error notifications
 - Rate limiting
@@ -365,6 +386,12 @@ See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for:
 - Additional SDKs (Python, Ruby, etc.)
 - Custom AI model support
 - Error trends and analytics
+
+**Advanced Capabilities:**
+- Automatically creating issue tracker tickets (e.g., Jira/GitHub Issues) from analyzed errors
+- Generating AI-assisted fix suggestions or patch branches for human review
+- Adding intelligent alerting with autonomous error grouping and labeling
+- Expanding context ingestion to include logs, metrics, and historical patterns
 
 ## Contributing
 

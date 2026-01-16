@@ -9,8 +9,6 @@ from sqlalchemy.orm import Session, joinedload
 from typing import Optional, List
 from datetime import datetime
 
-# Load environment variables from .env file
-# Look for .env in the backend directory (where this file is located)
 env_path = Path(__file__).parent.parent / '.env'
 load_dotenv(dotenv_path=env_path)
 
@@ -32,7 +30,6 @@ from app.utils.crud import (
 from app.utils.auth import get_current_user, create_access_token
 from app.celery import analyze_error_event
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -43,27 +40,18 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events."""
-    # Startup
-    # In development, automatically create tables if they don't exist (convenient for local dev)
-    # In production, use Alembic migrations: alembic upgrade head
     if os.getenv("ENV", "development") == "development":
         try:
             from app.database.database import Base
-            # This will only create tables that don't exist
             Base.metadata.create_all(bind=engine)
             logger.info("Database tables checked/created successfully")
         except Exception as e:
-            
             logger.warning(f"Failed to create database tables (non-critical): {e}")
-            # Don't fail startup if tables can't be created
-            # They might already exist or database might not be accessible yet
     yield
-    # Shutdown (if needed in the future)
 
 
 app = FastAPI(title="Error Ingestion API", version="1.0.0", lifespan=lifespan)
 
-# CORS middleware for development
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -195,7 +183,6 @@ async def list_error_events(
     - limit / offset: Pagination
     """
     try:
-        # Parse date strings if provided
         start_dt = None
         end_dt = None
         if start_date:
@@ -214,7 +201,6 @@ async def list_error_events(
             except ValueError:
                 raise HTTPException(status_code=400, detail=f"Invalid end_date format: {end_date}. Use ISO format.")
         
-        # Get error events (filtered by current user's projects)
         events, total = get_error_events(
             db=db,
             user_id=current_user.id,
@@ -228,10 +214,8 @@ async def list_error_events(
             offset=offset
         )
         
-        # Convert to response format
         event_items = []
         for event in events:
-            # Check if analysis exists
             has_analysis = event.analysis is not None
             
             event_items.append(schemas.ErrorEventListItem(
@@ -273,7 +257,6 @@ async def get_error_event(
     if not event:
         raise HTTPException(status_code=404, detail=f"Error event {event_id} not found")
     
-    # Check ownership - ensure the event belongs to a project owned by the user
     if event.project.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="You don't have access to this error event")
     
@@ -300,16 +283,13 @@ async def get_error_analysis(
     """
     Get AI analysis for a specific error event (only if from a project owned by current user).
     """
-    # Verify event exists and check ownership
     event = get_error_event_by_id(db, event_id)
     if not event:
         raise HTTPException(status_code=404, detail=f"Error event {event_id} not found")
     
-    # Check ownership
     if event.project.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="You don't have access to this error event")
     
-    # Get analysis
     analysis = get_error_analysis_by_event_id(db, event_id)
     if not analysis:
         raise HTTPException(
@@ -339,7 +319,6 @@ async def get_error_event_with_analysis(
     Optimized to use a single query with eager loading.
     Only accessible if the event belongs to a project owned by the current user.
     """
-    # Get event with analysis in a single query using eager loading
     event = db.query(models.ErrorEvent)\
         .options(joinedload(models.ErrorEvent.analysis))\
         .options(joinedload(models.ErrorEvent.project))\
@@ -349,11 +328,9 @@ async def get_error_event_with_analysis(
     if not event:
         raise HTTPException(status_code=404, detail=f"Error event {event_id} not found")
     
-    # Check ownership
     if event.project.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="You don't have access to this error event")
     
-    # Analysis is already loaded via the relationship
     analysis = event.analysis
     
     return schemas.ErrorEventWithAnalysis(
@@ -440,7 +417,6 @@ async def create_project_endpoint(
     try:
         db_project = create_project(db, project, current_user.id)
         
-        # Get error count
         error_count = get_project_error_count(db, db_project.id)
         
         return schemas.ProjectResponse(
@@ -474,7 +450,6 @@ async def list_projects(
     try:
         projects, total = get_projects(db, user_id=current_user.id, limit=limit, offset=offset)
         
-        # Get error counts for each project
         project_responses = []
         for project in projects:
             error_count = get_project_error_count(db, project.id)
@@ -512,7 +487,6 @@ async def get_project(
     if not project:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     
-    # Check ownership
     if project.user_id != current_user.id:
         raise HTTPException(status_code=403, detail="You don't have access to this project")
     
@@ -544,7 +518,6 @@ async def update_project_endpoint(
     try:
         db_project = update_project(db, project_id, project, current_user.id)
         
-        # Get error count
         error_count = get_project_error_count(db, db_project.id)
         
         return schemas.ProjectResponse(

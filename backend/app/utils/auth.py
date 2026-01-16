@@ -16,16 +16,12 @@ load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-# HTTP Bearer token security scheme
 security = HTTPBearer()
-
-# Optional security scheme (doesn't raise error if token missing)
 optional_security = HTTPBearer(auto_error=False)
 
-# JWT configuration
 JWT_SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-in-production")
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_DAYS = int(os.getenv("JWT_EXPIRATION_DAYS", "30"))  # Default 30 days
+JWT_EXPIRATION_DAYS = int(os.getenv("JWT_EXPIRATION_DAYS", "30"))
 
 
 def create_access_token(user_id: int, github_id: str) -> str:
@@ -41,10 +37,10 @@ def create_access_token(user_id: int, github_id: str) -> str:
     """
     expiration = datetime.now(timezone.utc) + timedelta(days=JWT_EXPIRATION_DAYS)
     payload = {
-        "sub": str(user_id),  # Subject (user ID)
+        "sub": str(user_id),
         "github_id": github_id,
         "exp": expiration,
-        "iat": datetime.now(timezone.utc),  # Issued at
+        "iat": datetime.now(timezone.utc),
     }
     
     token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
@@ -88,7 +84,6 @@ def get_current_user(
         token = credentials.credentials
         logger.debug(f"Authenticating with JWT token: {token[:20]}...")
         
-        # Decode JWT token
         payload = decode_access_token(token)
         if not payload:
             logger.warning("Invalid or expired JWT token")
@@ -97,7 +92,6 @@ def get_current_user(
                 detail="Invalid or expired API token"
             )
         
-        # Get user ID from token payload
         user_id = int(payload.get("sub"))
         if not user_id:
             logger.warning("JWT token missing user ID")
@@ -106,7 +100,6 @@ def get_current_user(
                 detail="Invalid token format"
             )
         
-        # Fetch user from database
         user = db.query(models.User).filter(models.User.id == user_id).first()
         if not user:
             logger.warning(f"User not found for ID: {user_id}")
