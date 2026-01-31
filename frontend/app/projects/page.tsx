@@ -188,8 +188,28 @@ export default function ProjectsPage() {
         </div>
 
         {loading && (
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500">Loading projects...</p>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="bg-white rounded-lg shadow p-6"
+              >
+                <div className="flex justify-between items-start mb-4 pr-8">
+                  <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 bg-gray-200 rounded w-8 animate-pulse"></div>
+                    <div className="h-6 bg-gray-200 rounded w-24 animate-pulse"></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-4 bg-gray-200 rounded w-12 animate-pulse"></div>
+                    <div className="h-5 bg-gray-200 rounded w-8 animate-pulse"></div>
+                  </div>
+                  <div className="h-4 bg-gray-200 rounded w-40 animate-pulse"></div>
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
