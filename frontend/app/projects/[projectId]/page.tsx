@@ -78,8 +78,44 @@ export default function ProjectDetailPage() {
         <UserSync />
         <ClientHeader />
         <main className="max-w-[95%] 2xl:max-w-[1600px] mx-auto px-6 sm:px-8 lg:px-12 xl:px-16 py-8">
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500">Loading project...</p>
+          {/* Header skeleton */}
+          <div className="mb-8">
+            <div className="h-4 bg-gray-200 rounded w-24 mb-4 animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded w-48 mb-2 animate-pulse"></div>
+            <div className="h-5 bg-gray-200 rounded w-64 animate-pulse"></div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Errors table skeleton */}
+            <div className="lg:col-span-8 xl:col-span-9">
+              <div className="bg-white rounded-lg shadow">
+                <div className="px-6 py-4 border-b border-gray-200">
+                  <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                </div>
+                <div className="p-4 space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className="flex items-center gap-4 p-3 border-b border-gray-100">
+                      <div className="h-5 bg-gray-200 rounded w-20 animate-pulse"></div>
+                      <div className="h-5 bg-gray-200 rounded flex-1 animate-pulse"></div>
+                      <div className="h-5 bg-gray-200 rounded w-12 animate-pulse"></div>
+                      <div className="h-5 bg-gray-200 rounded w-32 animate-pulse"></div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* SDK setup skeleton */}
+            <div className="lg:col-span-4 xl:col-span-3">
+              <div className="bg-white rounded-lg shadow p-6 space-y-4">
+                <div className="h-6 bg-gray-200 rounded w-24 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-3/4 animate-pulse"></div>
+                <div className="h-24 bg-gray-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                <div className="h-20 bg-gray-200 rounded w-full animate-pulse"></div>
+              </div>
+            </div>
           </div>
         </main>
       </div>

@@ -69,8 +69,55 @@ export default function ErrorDetailPage() {
         <UserSync />
         <ClientHeader />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white rounded-lg shadow p-12 text-center">
-            <p className="text-gray-500">Loading error details...</p>
+          {/* Header skeleton */}
+          <div className="mb-8">
+            <div className="h-4 bg-gray-200 rounded w-28 mb-4 animate-pulse"></div>
+            <div className="h-8 bg-gray-200 rounded w-40 animate-pulse"></div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Error Information skeleton */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="h-6 bg-gray-200 rounded w-36 mb-4 animate-pulse"></div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-20 mb-2 animate-pulse"></div>
+                  <div className="h-5 bg-gray-200 rounded w-40 animate-pulse"></div>
+                </div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-24 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded w-12 animate-pulse"></div>
+                </div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-16 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded w-16 animate-pulse"></div>
+                </div>
+                <div>
+                  <div className="h-4 bg-gray-200 rounded w-12 mb-2 animate-pulse"></div>
+                  <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
+                </div>
+                <div className="sm:col-span-2">
+                  <div className="h-4 bg-gray-200 rounded w-28 mb-2 animate-pulse"></div>
+                  <div className="h-16 bg-gray-200 rounded w-full animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stack Trace skeleton */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="h-6 bg-gray-200 rounded w-24 mb-4 animate-pulse"></div>
+              <div className="h-32 bg-gray-200 rounded w-full animate-pulse"></div>
+            </div>
+
+            {/* AI Analysis skeleton */}
+            <div className="bg-white rounded-lg shadow p-6">
+              <div className="h-6 bg-gray-200 rounded w-28 mb-4 animate-pulse"></div>
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded w-full animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-5/6 animate-pulse"></div>
+                <div className="h-4 bg-gray-200 rounded w-4/5 animate-pulse"></div>
+              </div>
+            </div>
           </div>
         </main>
       </div>
